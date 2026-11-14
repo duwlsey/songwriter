@@ -1,0 +1,8 @@
+{
+  "name": "nado-composer",
+  "private": true,
+  "scripts": {
+    "dev": "node tools/serve.mjs",
+    "build:apps-script": "node tools/build-apps-script.mjs"
+  }
+}
