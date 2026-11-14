@@ -13,7 +13,7 @@ Node.js가 설치되어 있다면 이 폴더에서 `npm run dev`를 실행하고
 ## 학교별로 복제하고 연결하기
 
 1. 저장소를 포크하거나 다운로드합니다. 교사 계정에 사용할 Firebase 프로젝트를 만들고 Authentication의 이메일/비밀번호 로그인을 켭니다. 프로젝트 설정의 웹 API 키를 복사합니다.
-2. `npm run build:apps-script`를 실행합니다. 새 Google Apps Script 프로젝트에 `apps-script/Code.gs`를 복사하고 HTML 파일 `Index`를 만들어 생성된 `apps-script/Index.html` 내용을 붙여넣습니다. 프로젝트 설정에서 매니페스트 표시를 켜고 `apps-script/appsscript.json`을 복사합니다. 연결된 Google Cloud 프로젝트에서 Drive API를 사용 설정합니다.
+2. `npm run build:apps-script`를 실행합니다. 새 Google Apps Script 프로젝트에 `apps-script/Code.gs`를 복사하고 HTML 파일 `Index`를 만들어 생성된 `apps-script/Index.html` 내용을 붙여넣습니다. 프로젝트 설정에서 매니페스트 표시를 켜고 `apps-script/appsscript.json`을 복사합니다. 이 매니페스트는 고급 Drive 서비스를 추가합니다. Apps Script의 기본 Cloud 프로젝트에는 Drive API가 자동으로 활성화됩니다. 별도로 연결한 표준 Cloud 프로젝트를 쓰면 Cloud 콘솔에서 Drive API를 활성화합니다.
 3. Apps Script 프로젝트 설정의 스크립트 속성에 `AUTH_KEY`를 추가합니다. 편집기에서 `install_`을 한 번 실행하고 권한을 승인합니다. 운영자 Drive에 비공개 저장 폴더와 스프레드시트가 만들어지고, 매일 만료를 처리하는 트리거가 설치됩니다.
 4. Apps Script를 웹 앱으로 배포합니다. **다음 사용자로 실행**은 배포자, **액세스 권한**은 익명 학생이 접근할 수 있는 **모든 사용자**를 선택합니다. 학교 Workspace 설정에 따라 이 옵션이 제한될 수 있습니다. `/exec` 주소에서 교사 회원가입과 학생 접속을 확인합니다.
 5. GitHub Pages를 쓸 경우 포크의 `config.js`에서 `webApp` 값에 위 주소를 넣고 저장소 루트를 Pages에 게시합니다. 이 주소에서 둘러보기를 바로 열 수 있고 학급 작업은 연결된 Apps Script 앱에서 진행합니다. 앱을 갱신할 때는 HTML을 다시 생성한 뒤 Apps Script 배포 버전도 갱신합니다.
