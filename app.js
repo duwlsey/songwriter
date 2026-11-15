@@ -191,6 +191,7 @@ document.addEventListener('change',event=>{
   if(el.dataset.assets!==undefined)work(async()=>{appendAssets(await assetsFromFiles([...el.files]));renderVideo();});
 });
 const actions={
+  'student-web':()=>redirectToWebApp('student'),
   'teacher-login':teacherLogin,demo:()=>begin({role:'demo'},exampleSong()),close:()=>dlg.close(),
   go:el=>jump(+el.dataset.go),save:()=>work(save),
   'add-note':el=>addNote(+el.dataset.len,el.dataset.rest==='1'),
@@ -451,7 +452,7 @@ async function work(fn){
 }
 function landing(){
   modeLabel.textContent='';
-  app.innerHTML='<div class="landing"><section class="hero"><h1 aria-label="나도 작곡가"><span class="hero-title-lead">나도</span> 작곡가</h1><p>오늘의 이야기를 여덟 마디 노래로 만들어요.</p><div class="hero-score">'+scoreMarkup(exampleSong(),{first:0,count:4})+'</div></section><section class="card"><h2>학생으로 시작</h2><form id="student"><label>학급 단어<input name="word" required maxlength="12" placeholder="예: 구름"></label><label>4자리 숫자<input name="code" required inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="예: 3101"></label><button class="primary">시작하기 · 이어 하기</button></form><hr><div class="row">'+button('교사 로그인','teacher-login')+button('둘러보기','demo')+'</div></section></div>';
+  app.innerHTML='<div class="landing"><section class="hero"><h1 aria-label="나도 작곡가"><span class="hero-title-lead">나도</span> 작곡가</h1><p>오늘의 이야기를 여덟 마디 노래로 만들어요.</p><div class="hero-score">'+scoreMarkup(exampleSong(),{first:0,count:4})+'</div></section><section class="card"><h2>학생으로 시작</h2>'+(config.webApp&&!window.google?.script?.run?button('학생 접속하기','student-web','class="primary"'):'<form id="student"><label>학급 단어<input name="word" required maxlength="12" placeholder="예: 구름"></label><label>4자리 숫자<input name="code" required inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="예: 3101"></label><button class="primary">시작하기 · 이어 하기</button></form>')+'<hr><div class="row">'+button('교사 로그인','teacher-login')+button('둘러보기','demo')+'</div></section></div>';
 }
 function teacherLogin(){
   if(redirectToWebApp('teacher'))return;
