@@ -381,6 +381,9 @@ async function api(action,data={}){
   return result.data;
 }
 let classroomBridge;
+if(config.webApp&&!window.google?.script?.run){
+  connectClassroomServer().catch(()=>{});
+}
 function connectClassroomServer(){
   if(classroomBridge)return classroomBridge;
   classroomBridge=new Promise((resolve,reject)=>{

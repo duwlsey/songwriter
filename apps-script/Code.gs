@@ -50,7 +50,10 @@ function db_(){
   return SpreadsheetApp.openById(id).getSheetByName('projects');
 }
 function records_(sheet){
-  return sheet.getDataRange().getValues().slice(1).map((v,i)=>({v,row:i+2,word:v[0],owner:v[1],code:String(v[2]),updated:v[3],step:v[4],file:v[5],expires:v[6],issued:v[7]}));
+  return sheet.getDataRange().getValues().slice(1).map((v,i)=>({v,row:i+2,word:v[0],owner:v[1],code:String(v[2]),updated:v[3],step:v[4],file:v[5],expires:v[6],issued:issuanceId_(v[7])}));
+}
+function issuanceId_(value){
+  return value instanceof Date?value.toISOString():String(value??'').trim();
 }
 function word_(input){
   const word=String(input||'').trim().normalize('NFC').toLowerCase();
@@ -152,8 +155,8 @@ function save_(identity,song){
   const body=JSON.stringify(song);
   if(Utilities.newBlob(body).getBytes().length>12*1024*1024)throw Error('사진이 너무 많아요. 사진 크기를 줄이고 다시 저장해 주세요.');
   return locked_(()=>{
-    const sheet=db_(), row=records_(sheet).find(item=>item.word===identity.word&&item.code===identity.code&&item.issued===identity.issued);
-    if(!row)throw Error('이 접속코드는 더 이상 사용할 수 없어요.');
+    const sheet=db_(), row=records_(sheet).find(item=>item.word===identity.word&&item.code===identity.code);
+    if(!row||row.issued!==issuanceId_(identity.issued))throw Error('접속코드가 삭제되었거나 다시 발급됐어요. 입력한 내용을 복사해 두고, 현재 코드로 다시 접속해 주세요.');
     const now=Date.now(), expires=row.file&&+row.expires>now?+row.expires:addMonths_(now);
     const folder=DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('FOLDER_ID'));
     const file=folder.createFile(Utilities.newBlob(body,'application/json','composition-'+Utilities.getUuid()+'.json'));
@@ -206,7 +209,9 @@ function teacher_(identity,r){
       const existing=new Set(classRows.map(row=>row.code));
       if(codes.some(code=>existing.has(code)))throw Error('이미 발급한 번호가 포함되어 있어요.');
       const values=codes.map(code=>[word,identity.owner,code,0,0,'',0,Utilities.getUuid()]);
-      sheet.getRange(sheet.getLastRow()+1,1,values.length,8).setValues(values);
+      const firstRow=sheet.getLastRow()+1;
+      sheet.getRange(firstRow,8,values.length,1).setNumberFormat('@');
+      sheet.getRange(firstRow,1,values.length,8).setValues(values);
       return codes.length;
     }
     if(r.action==='deleteCodes'){
