@@ -128,7 +128,6 @@ document.addEventListener('submit',event=>{
   const form=event.target;
   event.preventDefault();
   const data=new FormData(form);
-  if(form.id==='student'&&redirectToWebApp('student'))return;
   if(form.id==='student')return work(async()=>{
     const {token,word,code,song:project}=await api('student',Object.fromEntries(data));
     begin({role:'student',token,word,code},project);
@@ -191,7 +190,6 @@ document.addEventListener('change',event=>{
   if(el.dataset.assets!==undefined)work(async()=>{appendAssets(await assetsFromFiles([...el.files]));renderVideo();});
 });
 const actions={
-  'student-web':()=>redirectToWebApp('student'),
   'teacher-login':teacherLogin,demo:()=>begin({role:'demo'},exampleSong()),close:()=>dlg.close(),
   go:el=>jump(+el.dataset.go),save:()=>work(save),
   'add-note':el=>addNote(+el.dataset.len,el.dataset.rest==='1'),
@@ -376,9 +374,58 @@ async function api(action,data={}){
   }else if(['127.0.0.1','localhost'].includes(location.hostname)){
     const response=await fetch('/test-api',{method:'POST',body:JSON.stringify(request)});
     result=await response.json();
+  }else if(config.webApp){
+    result=await requestClassroomServer(request);
   }else throw Error('학급 저장 서버가 아직 연결되지 않았어요. 둘러보기는 바로 사용할 수 있어요.');
   if(!result.ok)throw Error(result.error);
   return result.data;
+}
+let classroomBridge;
+function connectClassroomServer(){
+  if(classroomBridge)return classroomBridge;
+  classroomBridge=new Promise((resolve,reject)=>{
+    const frame=document.createElement('iframe');
+    const url=new URL(config.webApp);
+    url.searchParams.set('bridge','1');
+    frame.hidden=true;
+    frame.title='학급 저장 서버 연결';
+    frame.src=url.href;
+    const timer=setTimeout(()=>{
+      window.removeEventListener('message',ready);
+      frame.remove();
+      classroomBridge=null;
+      reject(Error('학급 서버에 연결할 수 없어요. 잠시 후 다시 시도해 주세요.'));
+    },15000);
+    function ready(event){
+      if(event.data?.type!=='composer-ready'||!/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(event.origin))return;
+      const outer=frame.contentWindow;
+      if(event.source!==outer&&event.source?.parent!==outer)return;
+      clearTimeout(timer);
+      window.removeEventListener('message',ready);
+      resolve({source:event.source,origin:event.origin});
+    }
+    window.addEventListener('message',ready);
+    document.body.append(frame);
+  });
+  return classroomBridge;
+}
+async function requestClassroomServer(request){
+  const {source,origin}=await connectClassroomServer();
+  return new Promise((resolve,reject)=>{
+    const id=uid();
+    const timer=setTimeout(()=>{
+      window.removeEventListener('message',receive);
+      reject(Error('서버 응답이 늦어지고 있어요. 다시 시도해 주세요.'));
+    },60000);
+    function receive(event){
+      if(event.source!==source||event.origin!==origin||event.data?.type!=='composer-response'||event.data.id!==id)return;
+      clearTimeout(timer);
+      window.removeEventListener('message',receive);
+      resolve(event.data.result);
+    }
+    window.addEventListener('message',receive);
+    source.postMessage({type:'composer-request',id,request},origin);
+  });
 }
 function offlineTestRequest(request){
   const key='nado-composer-test-3101';
@@ -452,20 +499,11 @@ async function work(fn){
 }
 function landing(){
   modeLabel.textContent='';
-  app.innerHTML='<div class="landing"><section class="hero"><h1 aria-label="나도 작곡가"><span class="hero-title-lead">나도</span> 작곡가</h1><p>오늘의 이야기를 여덟 마디 노래로 만들어요.</p><div class="hero-score">'+scoreMarkup(exampleSong(),{first:0,count:4})+'</div></section><section class="card"><h2>학생으로 시작</h2>'+(config.webApp&&!window.google?.script?.run?button('학생 접속하기','student-web','class="primary"'):'<form id="student"><label>학급 단어<input name="word" required maxlength="12" placeholder="예: 구름"></label><label>4자리 숫자<input name="code" required inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="예: 3101"></label><button class="primary">시작하기 · 이어 하기</button></form>')+'<hr><div class="row">'+button('교사 로그인','teacher-login')+button('둘러보기','demo')+'</div></section></div>';
+  app.innerHTML='<div class="landing"><section class="hero"><h1 aria-label="나도 작곡가"><span class="hero-title-lead">나도</span> 작곡가</h1><p>오늘의 이야기를 여덟 마디 노래로 만들어요.</p><div class="hero-score">'+scoreMarkup(exampleSong(),{first:0,count:4})+'</div></section><section class="card"><h2>학생으로 시작</h2><form id="student"><label>학급 단어<input name="word" required maxlength="12" placeholder="예: 구름"></label><label>4자리 숫자<input name="code" required inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="예: 3101"></label><button class="primary">시작하기 · 이어 하기</button></form><hr><div class="row">'+button('교사 로그인','teacher-login')+button('둘러보기','demo')+'</div></section></div>';
 }
 function teacherLogin(){
-  if(redirectToWebApp('teacher'))return;
   if(config.offlineTest)return openTeacherPreview();
   showDialog('<h2>교사 로그인</h2><form id="teacher-login"><label>이메일<input name="email" type="email" autocomplete="username" required></label><label>비밀번호<input name="password" type="password" autocomplete="current-password" minlength="8" required></label><div class="row"><button name="action" value="login" class="primary">로그인</button><button name="action" value="signup">회원가입</button></div></form>');
-}
-function redirectToWebApp(mode,values={}){
-  if(window.google?.script?.run||!config.webApp)return false;
-  const url=new URL(config.webApp);
-  url.searchParams.set('mode',mode);
-  for(const [key,value] of Object.entries(values))url.searchParams.set(key,value);
-  location.assign(url);
-  return true;
 }
 function begin(next,nextSong){
   session=next;song=nextSong||freshSong();step=song.step;

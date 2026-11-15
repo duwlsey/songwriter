@@ -1,6 +1,20 @@
 const WORDS_='별 달 숲 꽃 봄 눈 꿈 빛 솔 콩 잎 새 산 강 들 풀 돌 흙 물 해 밤 낮 비 땅 귤 배 감 밤톨 구름 바람 하늘 노을 햇살 바다 파도 연못 나무 모래 별빛 이슬 풀잎 여울 달빛 물결 새싹 은하 단풍 여름 가을 겨울 들꽃 토끼 다람쥐 나비 참새 고래 오리 기러기 제비 까치 독수리 부엉이 펭귄 비둘기 갈매기 학 수달 물개 하마 코끼리 사자 호랑이 기린 얼룩말 여우 늑대 곰 판다 코알라 캥거루 사슴 노루 고양이 강아지 햄스터 고슴도치 거북이 개구리 도마뱀 금붕어 잉어 상어 문어 오징어 해파리 불가사리 꽃게 새우 조개 소라 달팽이 장미 튤립 백합 국화 해바라기 민들레 봉숭아 진달래 개나리 목련 수국 라일락 매화 벚꽃 연꽃 제비꽃 코스모스 유채꽃 무궁화 소나무 대나무 버드나무 은행나무 자작나무 벚나무 도토리 솔방울 잣 밤송이 억새 갈대 잔디 고사리 버섯 이끼 포도 사과 유자 자두 수박 참외 복숭아 딸기 체리 블루베리 바나나 야자 감자 당근 고구마 우산 피리 노래 리듬 소리 마루 하루 보리 햇빛 반딧불 눈송이 무지개 초승달 보름달 샘물 폭포 시냇물 바닷가 산책 오솔길 소풍 바구니 모자 연필 종이 색연필 크레파스 종이배 비행기 풍선 비눗방울 팽이 썰매 자전거 악기 기타 북 장구 꽹과리 피아노 바이올린 실로폰 종소리 메아리 별자리 오로라 은하수 샛별 아침 저녁'.split(' ');
 const FIELDS_={word:0,owner:1,code:2,updated:3,step:4,file:5,expires:6,issued:7};
-function doGet(){
+function doGet(e){
+  if(e?.parameter?.bridge==='1'){
+    return HtmlService.createHtmlOutput(`<!doctype html><script>
+    const site='https://duwlsey.github.io';
+    if(window.top!==window){
+      window.addEventListener('message',event=>{
+        const message=event.data;
+        if(event.source!==window.top||event.origin!==site||message?.type!=='composer-request')return;
+        const reply=result=>event.source.postMessage({type:'composer-response',id:message.id,result},site);
+        google.script.run.withSuccessHandler(reply).withFailureHandler(()=>reply({ok:false,error:'학급 서버 요청에 실패했어요.'})).request(message.request);
+      });
+      window.top.postMessage({type:'composer-ready'},site);
+    }
+    </script>`).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
   return HtmlService.createHtmlOutputFromFile('Index').setTitle('나도 작곡가').addMetaTag('viewport','width=device-width, initial-scale=1');
 }
 function deleteFile_(id){
