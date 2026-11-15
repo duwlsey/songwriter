@@ -71,7 +71,7 @@ function mac_(body){
   return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(body,key)).replace(/=+$/,'');
 }
 function issue_(identity){
-  const body=Utilities.base64EncodeWebSafe(JSON.stringify({...identity,exp:Date.now()+8*3600000})).replace(/=+$/,'');
+  const body=Utilities.base64EncodeWebSafe(JSON.stringify({...identity,exp:Date.now()+8*3600000}),Utilities.Charset.UTF_8).replace(/=+$/,'');
   return body+'.'+mac_(body);
 }
 function session_(token){
@@ -82,7 +82,7 @@ function session_(token){
     let mismatch=expected.length^signature.length;
     for(let i=0;i<expected.length;i++)mismatch|=expected.charCodeAt(i)^(signature.charCodeAt(i)||0);
     if(mismatch)throw Error();
-    const identity=JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(body)).getDataAsString());
+    const identity=JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(body)).getDataAsString('UTF-8'));
     if(identity.exp<Date.now())throw Error();
     return identity;
   }catch(error){throw Error('접속이 만료됐어요. 첫 화면에서 다시 접속해 주세요.');}
@@ -155,8 +155,8 @@ function save_(identity,song){
   const body=JSON.stringify(song);
   if(Utilities.newBlob(body).getBytes().length>12*1024*1024)throw Error('사진이 너무 많아요. 사진 크기를 줄이고 다시 저장해 주세요.');
   return locked_(()=>{
-    const sheet=db_(), row=records_(sheet).find(item=>item.word===identity.word&&item.code===identity.code);
-    if(!row||row.issued!==issuanceId_(identity.issued))throw Error('접속코드가 삭제되었거나 다시 발급됐어요. 입력한 내용을 복사해 두고, 현재 코드로 다시 접속해 주세요.');
+    const sheet=db_(), row=studentRecord_(records_(sheet),identity);
+    if(!row)throw Error('접속코드가 삭제되었거나 다시 발급됐어요. 입력한 내용을 복사해 두고, 현재 코드로 다시 접속해 주세요.');
     const now=Date.now(), expires=row.file&&+row.expires>now?+row.expires:addMonths_(now);
     const folder=DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('FOLDER_ID'));
     const file=folder.createFile(Utilities.newBlob(body,'application/json','composition-'+Utilities.getUuid()+'.json'));
@@ -167,6 +167,12 @@ function save_(identity,song){
     if(row.file)try{deleteFile_(row.file);}catch(error){console.error('Previous file cleanup failed');}
     return {updated:now,expires};
   });
+}
+function studentRecord_(records,identity){
+  const issued=issuanceId_(identity.issued);
+  const matches=records.filter(row=>row.code===identity.code&&row.issued===issued&&
+    (issued||row.word===identity.word));
+  return matches.length===1?matches[0]:null;
 }
 function range_(r){
   const start=String(r.start||''),end=String(r.end||''), direct=r.mode==='direct';
