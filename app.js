@@ -387,7 +387,9 @@ function connectClassroomServer(){
     const frame=document.createElement('iframe');
     const url=new URL(config.webApp);
     url.searchParams.set('bridge','1');
-    frame.hidden=true;
+    frame.setAttribute('aria-hidden','true');
+    frame.tabIndex=-1;
+    frame.style.cssText='position:fixed;left:-10000px;top:0;width:320px;height:200px;border:0';
     frame.title='학급 저장 서버 연결';
     frame.src=url.href;
     const timer=setTimeout(()=>{
@@ -399,7 +401,9 @@ function connectClassroomServer(){
     function ready(event){
       if(event.data?.type!=='composer-ready'||!/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(event.origin))return;
       const outer=frame.contentWindow;
-      if(event.source!==outer&&event.source?.parent!==outer)return;
+      let sender=event.source;
+      while(sender&&sender!==outer&&sender!==window&&sender!==sender.parent)sender=sender.parent;
+      if(sender!==outer)return;
       clearTimeout(timer);
       window.removeEventListener('message',ready);
       resolve({source:event.source,origin:event.origin});
