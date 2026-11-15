@@ -6,7 +6,7 @@ const css = await read('style.css');
 html = html.replace('<link rel="stylesheet" href="style.css">', () => '<style>\n' + css + '\n</style>');
 html = html.replace('<script defer src="config.js"></script>', '');
 const javascript = (await Promise.all(['music.js', 'video.js', 'app.js'].map(read))).join('\n');
-html = html.replace(/<script defer src="(?:music|video|app)\.js"><\/script>\r?\n/g, '');
+html = html.replace(/<script defer src="(?:music|video|app)\.js(?:\?[^"]*)?"><\/script>\r?\n/g, '');
 html = html.replace('</body>', () => '<script>\n' + javascript.replace(/<\/script/gi, '<\\/script') + '\n</script>\n</body>');
 await writeFile(new URL('apps-script/Index.html', root), html);
 const testPage = html.replace('<head>', '<head>\n<script>window.COMPOSER_CONFIG = {offlineTest:true};</script>')
